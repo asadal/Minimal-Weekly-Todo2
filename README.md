@@ -1,5 +1,4 @@
 # Minimal-Weekly-Todo2
-![MWT]("https://github.com/asadal/Minimal-Weekly-Todo2/blob/main/MWT.png")
 
 <img src="https://github.com/asadal/Minimal-Weekly-Todo2/blob/main/MWT.png" width="300">
 
