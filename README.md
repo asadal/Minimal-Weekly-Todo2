@@ -1,7 +1,7 @@
 # Minimal-Weekly-Todo2
-![MWT]("../images/logos/todo.png")
+![MWT]("https://github.com/asadal/Minimal-Weekly-Todo2/blob/main/MWT.png")
 
-<img src="../images/logos/todo.png" width="300">
+<img src="https://github.com/asadal/Minimal-Weekly-Todo2/blob/main/MWT.png" width="300">
 
 ## 주요 기능
 
