@@ -1,0 +1,172 @@
+/* 폰트 적용 */
+@font-face {
+  font-family: 'Paperlogy-3Light';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-3Light.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+}
+
+/* 전체 영역 */
+body {
+  width: 300px;
+  font-family: 'Paperlogy-3Light', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #f5f5f5;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* 요일 카드 */
+.day {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* 요일 제목 + 미완료 배지 */
+.day-header {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  position: relative;
+}
+
+/* 마우스 호버 시 요일명이 짙은 검정색으로 변경 */
+.day-header:hover {
+  color: #000;
+}
+
+.day-badge {
+  float: right;
+  background-color: #66c6ff;  /* 요일 옆 미완료 숫자 배지 배경색 */
+  color: #fff;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -2px;
+}
+
+/* 할 일 목록 */
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 할 일 항목 */
+.todo-item {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+}
+
+/* 체크박스 */
+.todo-checkbox {
+  margin-right: 8px;
+}
+
+/* 할일 텍스트: 일반 텍스트와 URL 모두 적용 (넘침 방지) */
+.todo-text,
+.todo-item a {
+  display: inline-block; 
+  max-width: calc(100% - 40px); /* 체크박스와 삭제 버튼 공간 고려 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;  /* 글자 크기를 16px로 지정 (원하는 크기로 조정 가능) */
+}
+
+/* 완료된 항목의 할일 텍스트에만 빨간 취소선 적용 */
+.todo-item.completed .todo-text,
+.todo-item.completed a {
+  text-decoration-line: line-through !important;
+  text-decoration-color: red !important;
+  text-decoration-style: solid !important;
+  color: #999 !important;
+}
+
+/* 목록 내 텍스트 입력 (수정 등) */
+.todo-input {
+  border: none;
+  border-bottom: 1px solid #eee;
+  padding: 4px;
+  flex-grow: 1;
+  font-size: 14px;
+}
+
+.todo-input:focus {
+  outline: none;
+  border-bottom-color: #3B82F6;
+}
+
+/* 삭제 버튼 (마우스 오버 시 표시) */
+.todo-delete {
+  color: #ff4444;
+  cursor: pointer;
+  margin-left: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.todo-item:hover .todo-delete {
+  opacity: 1;
+}
+
+/* "+ Add task" 링크 */
+.add-todo {
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  margin-top: 8px;
+  display: inline-block;
+}
+
+/* 새 할 일 입력 폼 */
+.new-todo-form {
+  display: none; /* 기본 숨김 */
+  margin-top: 8px;
+  align-items: center;
+}
+
+.new-todo-form.active {
+  display: flex;
+}
+
+/* 새 할 일 입력창 */
+.new-todo-input {
+  border: none;
+  border-bottom: 1px solid #3B82F6;
+  padding: 4px;
+  flex-grow: 1;
+  font-size: 14px;
+  margin-right: 8px;
+  font-family: 'Paperlogy-3Light', sans-serif;  /* Paperlogy 폰트 적용 */
+}
+
+.new-todo-input:focus {
+  outline: none;
+}
+
+/* 새 할 일 등록(+) 버튼: 요일 옆 배지와 동일한 크기와 모양, 배경색 #D3D3D3 */
+.new-todo-submit {
+  background: #D3D3D3;
+  color: #fff;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: auto;
+}
