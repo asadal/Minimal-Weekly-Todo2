@@ -1,5 +1,5 @@
 # Minimal-Weekly-Todo2
-![MWT](import ToDo from "../images/logos/todo.png";)
+![MWT](import ToDo from "../images/logos/todo.png")
 
 <img src="import ToDo from "../images/logos/todo.png" width="300">
 
