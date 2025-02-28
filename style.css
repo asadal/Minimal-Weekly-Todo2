@@ -17,6 +17,60 @@ body {
   overflow-y: auto;
 }
 
+/* 동기화 헤더 */
+.sync-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sync-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.sync-button {
+  background-color: #66c6ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Paperlogy-3Light', sans-serif;
+}
+
+.sync-button:hover {
+  background-color: #4db8ff;
+}
+
+.sync-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+}
+
+.sync-status {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 12px;
+  text-align: right;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
 /* 요일 카드 */
 .day {
   margin-bottom: 12px;

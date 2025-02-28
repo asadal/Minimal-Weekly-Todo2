@@ -2,11 +2,37 @@
 
 // 요일 배열
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+let isSyncing = false;
+let lastSyncTime = null;
 
-// chrome.storage에 저장된 할일 데이터를 불러옵니다.
+// chrome.storage.sync에서 할일 데이터를 불러옵니다.
 function loadAllTasks() {
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get("weeklyTasks", (data) => {
+      if (chrome.runtime.lastError) {
+        console.warn('Sync storage error, falling back to local:', chrome.runtime.lastError);
+        // 동기화 스토리지 실패 시 로컬 스토리지에서 시도
+        loadFromLocal().then(resolve).catch(reject);
+      } else {
+        const weeklyTasks = data.weeklyTasks || {
+          Monday: [],
+          Tuesday: [],
+          Wednesday: [],
+          Thursday: [],
+          Friday: [],
+          Saturday: [],
+          Sunday: []
+        };
+        resolve(weeklyTasks);
+      }
+    });
+  });
+}
+
+// 로컬 스토리지에서 할일 데이터를 불러옵니다.
+function loadFromLocal() {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get("weeklyTasks", (data) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
       } else {
@@ -25,10 +51,27 @@ function loadAllTasks() {
   });
 }
 
-// 할일 데이터를 저장합니다.
+// 동기화 스토리지에 할일 데이터를 저장합니다.
 function saveAllTasks(weeklyTasks) {
   return new Promise((resolve, reject) => {
+    // 동기화 스토리지에 저장
     chrome.storage.sync.set({ weeklyTasks }, () => {
+      if (chrome.runtime.lastError) {
+        console.warn('Error saving to sync storage:', chrome.runtime.lastError);
+        // 실패시 로컬 스토리지에 백업
+        saveToLocal(weeklyTasks).then(resolve).catch(reject);
+      } else {
+        // 성공시에도 로컬 스토리지에 백업
+        saveToLocal(weeklyTasks).then(() => resolve()).catch(() => resolve());
+      }
+    });
+  });
+}
+
+// 로컬 스토리지에 할일 데이터를 저장합니다.
+function saveToLocal(weeklyTasks) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ weeklyTasks }, () => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
       } else {
@@ -36,6 +79,138 @@ function saveAllTasks(weeklyTasks) {
       }
     });
   });
+}
+
+// 두 할일 항목이 동일한지 확인하는 함수
+function isSameTask(task1, task2) {
+  return task1.text === task2.text;
+}
+
+// 할일 목록 병합 함수: 두 브라우저의 할일을 통합
+function mergeTasks(localTasks, syncTasks) {
+  const result = { ...localTasks };
+  
+  // 각 요일별로 처리
+  days.forEach(day => {
+    // 원본 배열 복사
+    const localDayTasks = [...(localTasks[day] || [])];
+    const syncDayTasks = [...(syncTasks[day] || [])];
+    
+    // 통합된 할일 목록
+    const mergedTasks = [...localDayTasks];
+    
+    // 동기화 스토리지의 할일을 로컬에 없는 경우에만 추가
+    syncDayTasks.forEach(syncTask => {
+      // 동일한 텍스트의 할일이 로컬에 있는지 확인
+      const existingTaskIndex = localDayTasks.findIndex(localTask => 
+        isSameTask(localTask, syncTask)
+      );
+      
+      if (existingTaskIndex === -1) {
+        // 로컬에 없는 할일은 추가
+        mergedTasks.push(syncTask);
+      } else {
+        // 이미 존재하는 경우, 완료 상태가 다르면 상태 업데이트 (일관성을 위해)
+        if (syncTask.completed && !localDayTasks[existingTaskIndex].completed) {
+          mergedTasks[existingTaskIndex].completed = true;
+        }
+      }
+    });
+    
+    // 병합된 할일 목록 업데이트
+    result[day] = mergedTasks;
+  });
+  
+  return result;
+}
+
+// 수동 동기화 실행 함수
+async function performSync() {
+  if (isSyncing) return;
+  
+  const syncButton = document.querySelector('.sync-button');
+  const syncIcon = syncButton.querySelector('.sync-icon');
+  const syncText = syncButton.querySelector('.sync-text');
+  const syncStatus = document.querySelector('.sync-status');
+  
+  // 동기화 상태 UI 업데이트
+  isSyncing = true;
+  syncIcon.classList.add('spinning');
+  syncText.textContent = '동기화 중...';
+  
+  try {
+    // 로컬 데이터 불러오기
+    const localTasks = await loadFromLocal();
+    
+    // 동기화 스토리지 데이터 불러오기
+    let syncTasks;
+    try {
+      syncTasks = await new Promise((resolve, reject) => {
+        chrome.storage.sync.get("weeklyTasks", (data) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(data.weeklyTasks || {
+              Monday: [],
+              Tuesday: [],
+              Wednesday: [],
+              Thursday: [],
+              Friday: [],
+              Saturday: [],
+              Sunday: []
+            });
+          }
+        });
+      });
+    } catch (error) {
+      console.warn('동기화 스토리지에서 데이터를 불러올 수 없습니다:', error);
+      // 동기화 스토리지에서 불러오기 실패 시, 로컬 데이터만 사용
+      syncTasks = { ...localTasks };
+    }
+    
+    // 할일 목록 병합
+    const mergedTasks = mergeTasks(localTasks, syncTasks);
+    
+    // 병합된 데이터를 동기화 스토리지와 로컬 스토리지에 저장
+    await new Promise((resolve, reject) => {
+      chrome.storage.sync.set({ weeklyTasks: mergedTasks }, () => {
+        if (chrome.runtime.lastError) {
+          console.warn('동기화 스토리지에 저장 실패:', chrome.runtime.lastError);
+          // 오류가 발생해도 계속 진행 (로컬 저장은 시도)
+          resolve();
+        } else {
+          resolve();
+        }
+      });
+    });
+    
+    // 로컬 스토리지에 저장
+    await saveToLocal(mergedTasks);
+    
+    // UI 업데이트
+    days.forEach((day) => {
+      renderTodoList(day, mergedTasks[day]);
+    });
+    updateDayBadges();
+    
+    // 동기화 시간 저장 및 표시
+    lastSyncTime = new Date();
+    chrome.storage.local.set({ lastSyncTime: lastSyncTime.toISOString() });
+    syncStatus.textContent = `마지막 동기화: ${lastSyncTime.toLocaleTimeString()}`;
+    
+    // 성공 메시지
+    setTimeout(() => {
+      syncStatus.textContent = `동기화 완료: ${lastSyncTime.toLocaleTimeString()}`;
+    }, 1000);
+  } catch (error) {
+    console.error('동기화 오류:', error);
+    syncStatus.textContent = `동기화 실패: ${error.message}`;
+  } finally {
+    // 동기화 상태 초기화
+    isSyncing = false;
+    syncIcon.classList.remove('spinning');
+    syncText.textContent = 'Sync';
+  }
 }
 
 // 할일 텍스트를 편집 모드로 전환하는 함수
@@ -230,11 +405,40 @@ async function updateDayBadges() {
   });
 }
 
+// 동기화 버튼 및 상태 설정
+function setupSyncButton() {
+  const syncButton = document.querySelector('.sync-button');
+  const syncStatus = document.querySelector('.sync-status');
+  
+  if (syncButton) {
+    syncButton.addEventListener('click', performSync);
+  }
+  
+  // 마지막 동기화 시간 로드
+  chrome.storage.local.get(['lastSyncTime'], (result) => {
+    if (result.lastSyncTime) {
+      lastSyncTime = new Date(result.lastSyncTime);
+      if (syncStatus) {
+        syncStatus.textContent = `마지막 동기화: ${lastSyncTime.toLocaleTimeString()}`;
+      }
+    }
+  });
+}
+
 // 초기화: 링크, 폼 처리 및 렌더링 실행
 async function init() {
   setupAddTaskLinks();
   setupNewTodoForms();
+  setupSyncButton();
   await renderAllDays();
+  
+  // 동기화 리스너 설정 - 다른 기기에서 변경사항이 있을 때 자동 업데이트
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'sync' && changes.weeklyTasks) {
+      console.log('동기화 스토리지에서 변경 감지됨');
+      renderAllDays();
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
