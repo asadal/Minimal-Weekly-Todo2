@@ -1,6 +1,6 @@
 {
   "name": "Minimal Weekly Todo",
-  "version": "1.5",
+  "version": "1.8",
   "description": "요일별 할 일을 관리하고, 아이콘 및 요일 옆에 미완료 배지를 표시합니다.",
   "manifest_version": 3,
   "permissions": [

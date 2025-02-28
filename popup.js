@@ -1,5 +1,3 @@
-// popup.js
-
 // 요일 배열
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 let isSyncing = false;
@@ -137,48 +135,50 @@ async function performSync() {
   isSyncing = true;
   syncIcon.classList.add('spinning');
   syncText.textContent = '동기화 중...';
+  syncStatus.textContent = '동기화 시작...';
   
   try {
     // 로컬 데이터 불러오기
+    console.log('로컬 데이터 불러오는 중...');
     const localTasks = await loadFromLocal();
+    console.log('로컬 데이터:', localTasks);
     
     // 동기화 스토리지 데이터 불러오기
-    let syncTasks;
-    try {
-      syncTasks = await new Promise((resolve, reject) => {
-        chrome.storage.sync.get("weeklyTasks", (data) => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve(data.weeklyTasks || {
-              Monday: [],
-              Tuesday: [],
-              Wednesday: [],
-              Thursday: [],
-              Friday: [],
-              Saturday: [],
-              Sunday: []
-            });
-          }
-        });
+    console.log('동기화 스토리지 데이터 불러오는 중...');
+    const syncTasks = await new Promise((resolve, reject) => {
+      chrome.storage.sync.get("weeklyTasks", (data) => {
+        if (chrome.runtime.lastError) {
+          console.error('동기화 스토리지 오류:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+        } else {
+          console.log('동기화 스토리지 데이터:', data.weeklyTasks);
+          resolve(data.weeklyTasks || {
+            Monday: [],
+            Tuesday: [],
+            Wednesday: [],
+            Thursday: [],
+            Friday: [],
+            Saturday: [],
+            Sunday: []
+          });
+        }
       });
-    } catch (error) {
-      console.warn('동기화 스토리지에서 데이터를 불러올 수 없습니다:', error);
-      // 동기화 스토리지에서 불러오기 실패 시, 로컬 데이터만 사용
-      syncTasks = { ...localTasks };
-    }
+    });
     
     // 할일 목록 병합
+    console.log('할일 목록 병합 중...');
     const mergedTasks = mergeTasks(localTasks, syncTasks);
+    console.log('병합된 할일 목록:', mergedTasks);
     
     // 병합된 데이터를 동기화 스토리지와 로컬 스토리지에 저장
+    console.log('병합된 데이터 저장 중...');
     await new Promise((resolve, reject) => {
       chrome.storage.sync.set({ weeklyTasks: mergedTasks }, () => {
         if (chrome.runtime.lastError) {
-          console.warn('동기화 스토리지에 저장 실패:', chrome.runtime.lastError);
-          // 오류가 발생해도 계속 진행 (로컬 저장은 시도)
-          resolve();
+          console.error('동기화 스토리지 저장 오류:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
         } else {
+          console.log('동기화 스토리지에 저장 완료');
           resolve();
         }
       });
@@ -186,8 +186,10 @@ async function performSync() {
     
     // 로컬 스토리지에 저장
     await saveToLocal(mergedTasks);
+    console.log('로컬 스토리지에 저장 완료');
     
     // UI 업데이트
+    console.log('UI 업데이트 중...');
     days.forEach((day) => {
       renderTodoList(day, mergedTasks[day]);
     });
@@ -196,7 +198,7 @@ async function performSync() {
     // 동기화 시간 저장 및 표시
     lastSyncTime = new Date();
     chrome.storage.local.set({ lastSyncTime: lastSyncTime.toISOString() });
-    syncStatus.textContent = `마지막 동기화: ${lastSyncTime.toLocaleTimeString()}`;
+    syncStatus.textContent = `마지막 동기화: ${lastSyncTime.toLocaleTimeString()} (성공)`;
     
     // 성공 메시지
     setTimeout(() => {
@@ -204,7 +206,7 @@ async function performSync() {
     }, 1000);
   } catch (error) {
     console.error('동기화 오류:', error);
-    syncStatus.textContent = `동기화 실패: ${error.message}`;
+    syncStatus.textContent = `동기화 실패: ${error.message || '알 수 없는 오류'}`;
   } finally {
     // 동기화 상태 초기화
     isSyncing = false;
