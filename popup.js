@@ -443,4 +443,31 @@ async function init() {
   });
 }
 
+// 동기화 데이터 로그 
+function debugStorageSync() {
+  if (chrome && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.get(null, function(items) {
+      console.log('모든 동기화 스토리지 데이터:', items);
+    });
+  } else {
+    console.error('chrome.storage.sync API를 사용할 수 없습니다.');
+  }
+}
+
+// 페이지 로드 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+  debugStorageSync();
+});
+
+// weeklyTasks 키 확인
+chrome.storage.sync.get("weeklyTasks", function(data) {
+  console.log("동기화 스토리지 내용:");
+  console.log(data);
+  if (data && data.weeklyTasks) {
+    console.log("weeklyTasks 키 존재함:", Object.keys(data.weeklyTasks).length, "요일 데이터 있음");
+  } else {
+    console.log("weeklyTasks 키가 없거나 비어있음");
+  }
+});
+
 document.addEventListener("DOMContentLoaded", init);
